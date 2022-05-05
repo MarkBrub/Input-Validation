@@ -10,7 +10,7 @@ It can then be run with the following command
 ```./main.out <inputFile>```
 
 The input file is optional. If included it will be parsed on startup and the user data will automatically populate the database.
-A valid input file will be a .txt where each pair of lines is a user. The first line will be the user’s name and the second line is their phone number. The file `input.txt` is an example with both valid and invaild inputs. I have also include `good.txt` with all valid inputs and `bad.txt` with all invalid inputs.
+A valid input file will be a .txt where each pair of lines is a user. The first line will be the user’s name and the second line is their phone number. I have included `good.txt` with all valid inputs and `bad.txt` with all invalid inputs. The exception is Quiñones in `good.txt`. The second occurence will fail, showing that all forms of ñ compare equal as will be discussed later. It also shows how my program handles duplicates.
 
 The bulk of my program is built around a loop that gets commands from the user. The ADD command prompts the user for a name and phone number to add to the database. I combined both DEL commands into one that first requests whether to delete by name or number and then removes it. The LIST command displays all users in the database. The EXIT command terminates the program. If at any point an invalid input is entered, the program redirects back to command selection. More detailed descriptions of each function and the consideration that went into them are below.
 

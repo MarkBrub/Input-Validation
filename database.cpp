@@ -120,7 +120,8 @@ bool Database::validateName(std::u32string& name) const {
 
 bool Database::validatePhoneNumber(std::string& phoneNumber) const {
     std::string extention;
-    std::smatch matches;
+    std::string temp;
+    int matches = 0;
 
     // If there anything other than letters, numbers, or a handfull of punctuation and spaces return false
     // This is a sanity check to throw out things that are obviously not numbers
@@ -135,8 +136,14 @@ bool Database::validatePhoneNumber(std::string& phoneNumber) const {
         // If there is no "x" there will be no extention
         // Every way I could find to show an extention had an "x" and only one
         // If there are no x's or more than one return false
-        std::regex_search(phoneNumber, matches, std::regex("x"));
-        if(matches.size() != 1) return false;
+        std::smatch xMatches;
+        temp = phoneNumber;
+        while(std::regex_search(temp, xMatches, std::regex("x"))) {
+            matches++;
+            if(matches > 1) return false;
+            temp = xMatches.suffix();
+        }
+        if(matches == 0) return false;
 
         // Search first for extentions that say "extention" and replace it with "ext."
         // The "." at the end of "ext" makes sure that "extention." will fail later because of the extra "."
@@ -149,8 +156,9 @@ bool Database::validatePhoneNumber(std::string& phoneNumber) const {
 
         // Match from the x to the end of the string
         // This is the extention
-        std::regex_search(phoneNumber, matches, std::regex("x.*"));
-        extention = matches[0];
+        std::smatch ext;
+        std::regex_search(phoneNumber, ext, std::regex("x.*"));
+        extention = ext[0];
         phoneNumber = phoneNumber.substr(0, phoneNumber.size() - extention.size());
 
         // An extention must now fit the format of "x" followed one or 0 spaces and between 1 and 15 digits
@@ -167,13 +175,25 @@ bool Database::validatePhoneNumber(std::string& phoneNumber) const {
 
     // Sometimes the country code is separated from the number by a "."
     // If there is more than one "." in the string, return false
-    std::regex_search(phoneNumber, matches, std::regex("\\."));
-    if(matches.size() > 1) return false;
+    std::smatch dotMatches;
+    temp = phoneNumber;
+    matches = 0;
+    while(std::regex_search(temp, dotMatches, std::regex("\\."))) {
+        matches++;
+        if(matches > 1) return false;
+        temp = dotMatches.suffix();
+    }
 
-    // If there is "(" or ")" but not in the pattern of "([0-9]{3})" return false
-    std::regex_search(phoneNumber, matches, std::regex("\\(|\\)"));
-    if(matches.size() && !std::regex_search(phoneNumber, std::regex("\\([0-9]{3}\\)"))) return false;
-    
+    // If there is "(" or ")" but not in the pattern of "([0-9]{3})" or if there is more than one instance return false
+    std::smatch parenMatches;
+    temp = phoneNumber;
+    matches = 0;
+    while(std::regex_search(temp, parenMatches, std::regex("\\(|\\)"))) {
+        matches++;
+        temp = parenMatches.suffix();
+    }
+    if(matches && !std::regex_search(phoneNumber, std::regex("\\([0-9]{3}\\)"))) return false;
+    if(matches > 2) return false;
     
     // replace everything except + and 0-9 with spaces
     phoneNumber = std::regex_replace(phoneNumber, std::regex("[^0-9\\+]+"), " ");
@@ -182,8 +202,9 @@ bool Database::validatePhoneNumber(std::string& phoneNumber) const {
     // This accounts for cases like (972)-964-4333
     phoneNumber = std::regex_replace(phoneNumber, std::regex("\\s\\s"), " ");
 
-    // Remove possible leading spaces
+    // Remove possible leading spaces and trailing spaces
     if(phoneNumber[0] == ' ') phoneNumber = phoneNumber.substr(1);
+    if(phoneNumber.back() == ' ') phoneNumber.pop_back();
 
     // If it starts with a "+" parse it as an international number
     if(phoneNumber[0] == '+' && phoneNumber.substr(0, 3) != "+1 ") {
